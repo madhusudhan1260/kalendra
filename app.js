@@ -107,6 +107,18 @@
     return type === "birthday" ? "🎂" : type === "task" ? "✅" : "🎯";
   }
 
+  /* Blend a hex color toward white by `amt` (0-1) for gradient chips */
+  function lighten(hex, amt) {
+    const clean = hex.replace("#", "");
+    const full = clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;
+    const num = parseInt(full, 16);
+    const mix = (channel) => Math.round(channel + (255 - channel) * amt);
+    const r = mix((num >> 16) & 255);
+    const g = mix((num >> 8) & 255);
+    const b = mix(num & 255);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
   /* Does an item occur on the given Date object? */
   function occursOn(item, date) {
     const itemDate = parseDateStr(item.date);
@@ -182,7 +194,8 @@
   function chipHtml(item) {
     const label = item.type === "birthday" ? `🎂 ${item.title}` : item.type === "task" ? `${item.done ? "✓ " : ""}${item.title}` : item.title;
     const doneClass = item.type === "task" && item.done ? "done" : "";
-    return `<div class="chip task ${doneClass}" style="background:${item.color}" data-id="${item.id}" title="${escapeAttr(item.title)}"><span>${escapeHtml(label)}</span></div>`;
+    const c2 = lighten(item.color, 0.32);
+    return `<div class="chip task ${doneClass}" style="--chip-c:${item.color};--chip-c2:${c2}" data-id="${item.id}" title="${escapeAttr(item.title)}"><span>${escapeHtml(label)}</span></div>`;
   }
 
   function escapeHtml(s) {
@@ -207,11 +220,13 @@
       const outside = cellDate.getMonth() !== month;
       const isToday = isSameDay(cellDate, today);
       const isSelected = isSameDay(cellDate, state.selectedDate);
+      const dow = cellDate.getDay();
+      const weekendClass = dow === 0 ? "weekend-sun" : dow === 6 ? "weekend-sat" : "";
       const items = itemsOnDate(cellDate);
       const visible = items.slice(0, 3);
       const extra = items.length - visible.length;
 
-      html += `<div class="day-cell ${outside ? "outside" : ""} ${isToday ? "is-today" : ""} ${isSelected ? "selected" : ""}" data-date="${toDateStr(cellDate)}">
+      html += `<div class="day-cell ${outside ? "outside" : ""} ${isToday ? "is-today" : ""} ${isSelected ? "selected" : ""} ${weekendClass}" data-date="${toDateStr(cellDate)}" style="--i:${i}">
         <span class="day-num">${cellDate.getDate()}</span>
         <div class="day-chips">
           ${visible.map(chipHtml).join("")}
@@ -239,8 +254,9 @@
       ? `<div class="item-check ${item.done ? "checked" : ""}" data-check="${item.id}">${item.done ? "✓" : ""}</div>`
       : `<div class="item-check" style="border-color:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;">${typeIcon(item.type)}</div>`;
 
-    return `<div class="item-card" data-edit="${item.id}">
-      <div class="item-color" style="background:${item.color}"></div>
+    const c2 = lighten(item.color, 0.32);
+    return `<div class="item-card" data-edit="${item.id}" style="--chip-c:${item.color};--chip-c2:${c2}">
+      <div class="item-color"></div>
       ${checkHtml}
       <div class="item-body">
         <div class="item-title ${item.done ? "done" : ""}">${escapeHtml(item.title)}</div>
@@ -436,9 +452,20 @@
     if (checkTarget) {
       const item = state.items.find((i) => i.id === checkTarget.dataset.check);
       if (item) {
-        item.done = !item.done;
-        saveItems();
-        renderAll();
+        const nowDone = !item.done;
+        checkTarget.classList.toggle("checked", nowDone);
+        checkTarget.textContent = nowDone ? "✓" : "";
+        if (checkTarget.animate) {
+          checkTarget.animate(
+            [{ transform: "scale(1)" }, { transform: "scale(1.4)" }, { transform: "scale(1)" }],
+            { duration: 320, easing: "cubic-bezier(.34,1.56,.64,1)" }
+          );
+        }
+        setTimeout(() => {
+          item.done = nowDone;
+          saveItems();
+          renderAll();
+        }, 160);
       }
       return;
     }
@@ -467,13 +494,21 @@
   });
 
   /* ---------------- Navigation ---------------- */
+  function slideMonth(direction) {
+    monthGrid.classList.remove("slide-next", "slide-prev");
+    void monthGrid.offsetWidth; // restart animation
+    monthGrid.classList.add(direction === "next" ? "slide-next" : "slide-prev");
+  }
+
   el("prevBtn").addEventListener("click", () => {
     state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth() - 1, 1);
     renderMonth();
+    slideMonth("prev");
   });
   el("nextBtn").addEventListener("click", () => {
     state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth() + 1, 1);
     renderMonth();
+    slideMonth("next");
   });
   el("todayBtn").addEventListener("click", () => {
     state.viewDate = new Date();
@@ -533,6 +568,23 @@
     const next = currentEffectiveTheme() === "dark" ? "light" : "dark";
     applyTheme(next);
     localStorage.setItem(THEME_KEY, next);
+  });
+
+  /* ---------------- Ripple effect ---------------- */
+  const RIPPLE_SELECTOR = ".icon-btn, .today-btn, .add-btn, .view-btn, .type-tab, .mtab, .btn-primary, .btn-ghost, .btn-danger, .day-cell, .item-card";
+
+  document.addEventListener("click", (e) => {
+    const target = e.target.closest(RIPPLE_SELECTOR);
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height) * 1.8;
+    const ripple = document.createElement("span");
+    ripple.className = "ripple";
+    ripple.style.width = ripple.style.height = `${size}px`;
+    ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+    ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+    target.appendChild(ripple);
+    ripple.addEventListener("animationend", () => ripple.remove());
   });
 
   /* ---------------- Init ---------------- */
