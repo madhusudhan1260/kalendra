@@ -104,7 +104,68 @@
   }
 
   function typeIcon(type) {
-    return type === "birthday" ? "🎂" : type === "task" ? "✅" : "🎯";
+    return type === "birthday" ? "🎂" : type === "task" ? "✅" : type === "class" ? "📚" : "🎯";
+  }
+
+  /* ---------------- Timetable (weekly recurring college schedule) ---------------- */
+  const SESSIONS = [
+    { label: "Session 1", start: "08:00", end: "08:55" },
+    { label: "Session 2", start: "09:00", end: "09:55" },
+    { label: "Session 3", start: "10:00", end: "10:55" },
+    { label: "Session 4", start: "11:05", end: "12:00" },
+    { label: "Session 5", start: "12:05", end: "13:00" },
+  ];
+
+  const SUBJECT_COLORS = {
+    LEA: "#6366f1",
+    SOF: "#ec4899",
+    FSD: "#0ea5e9",
+    CNS: "#f59e0b",
+    JP: "#14b8a6",
+    DM: "#10b981",
+    DES: "#f43f5e",
+    THE: "#94a3b8",
+  };
+  const subjectColor = (code) => SUBJECT_COLORS[code] || "#6366f1";
+
+  /* dayOfWeek: 1=Mon ... 6=Sat. Each row has one entry per session slot (or null for a free period). */
+  const TIMETABLE = {
+    1: [ { code: "LEA", sub: "V-KUK", room: "LT 317" }, { code: "LEA", sub: "V-KUK", room: "LT 317" }, { code: "THE", room: "" }, { code: "SOF", sub: "V-UDH", room: "LT 317" }, { code: "SOF", sub: "V-UDH", room: "LT 317" } ],
+    2: [ { code: "FSD", room: "LT 107" }, { code: "FSD", room: "LT 107" }, { code: "CNS", sub: "GUQ", room: "LT 112" }, { code: "JP", sub: "BLE", room: "LT 112" }, { code: "JP", sub: "BLE", room: "LT 112" } ],
+    3: [ { code: "CNS", sub: "MIV", room: "LT 317" }, { code: "CNS", sub: "MIV", room: "LT 317" }, { code: "JP", room: "" }, { code: "DM", sub: "AMIT", room: "LT 317" }, { code: "DES", sub: "NIR", room: "LT 317" } ],
+    4: [ { code: "FSD", room: "" }, { code: "FSD", sub: "SIB", room: "LT 317" }, { code: "JP", room: "" }, { code: "THE", room: "" }, { code: "DM", sub: "AMIT", room: "LT 317" } ],
+    5: [ { code: "CNS", sub: "GUQ", room: "" }, { code: "THE", room: "" }, { code: "DM", sub: "AMIT", room: "LT 317" }, { code: "DM", sub: "AMIT", room: "" }, null ],
+    6: [ { code: "FSD", sub: "SIB", room: "LT 107" }, null, null, null, null ],
+  };
+  const DAY_NAMES = { 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday" };
+
+  /* Weekly classes as calendar-item-shaped objects for a given date's weekday */
+  function classesOnDate(date) {
+    const rows = TIMETABLE[date.getDay()];
+    if (!rows) return [];
+    return rows
+      .map((entry, i) => (entry ? { entry, session: SESSIONS[i] } : null))
+      .filter(Boolean)
+      .map(({ entry, session }) => ({
+        id: `class-${date.getDay()}-${session.label}`,
+        type: "class",
+        title: entry.sub ? `${entry.code} (${entry.sub})` : entry.code,
+        notes: entry.room || "",
+        time: session.start,
+        endTime: session.end,
+        color: subjectColor(entry.code),
+        done: false,
+        repeatYearly: false,
+      }));
+  }
+
+  function allItemsOnDate(date) {
+    return [...itemsOnDate(date), ...classesOnDate(date)].sort((a, b) => {
+      if (a.time && b.time) return a.time.localeCompare(b.time);
+      if (a.time) return -1;
+      if (b.time) return 1;
+      return 0;
+    });
   }
 
   /* Blend a hex color toward white by `amt` (0-1) for gradient chips */
@@ -174,6 +235,8 @@
   const monthGrid = el("monthGrid");
   const agendaView = el("agendaView");
   const agendaList = el("agendaList");
+  const timetableView = el("timetableView");
+  const timetableGrid = el("timetableGrid");
   const dayItemsEl = el("dayItems");
   const selectedDayTitle = el("selectedDayTitle");
   const upcomingList = el("upcomingList");
@@ -222,7 +285,7 @@
       const isSelected = isSameDay(cellDate, state.selectedDate);
       const dow = cellDate.getDay();
       const weekendClass = dow === 0 ? "weekend-sun" : dow === 6 ? "weekend-sat" : "";
-      const items = itemsOnDate(cellDate);
+      const items = allItemsOnDate(cellDate);
       const visible = items.slice(0, 3);
       const extra = items.length - visible.length;
 
@@ -243,6 +306,8 @@
     if (item.type === "birthday") {
       const years = occ.getFullYear() - parseDateStr(item.date).getFullYear();
       metaParts.push(years > 0 ? `Turns ${years}` : "Birthday");
+    } else if (item.type === "class") {
+      metaParts.push(`${formatTime(item.time)} – ${formatTime(item.endTime)}`);
     } else if (item.time) {
       metaParts.push(formatTime(item.time));
     } else {
@@ -272,7 +337,7 @@
     selectedDayTitle.textContent = title;
     sheetDayTitle.textContent = title;
 
-    const items = itemsOnDate(state.selectedDate);
+    const items = allItemsOnDate(state.selectedDate);
     const html = items.length
       ? items.map((it) => itemCardHtml(it, { date: state.selectedDate })).join("")
       : `<p class="empty-hint">No items yet. Tap "Add" to create one.</p>`;
@@ -299,7 +364,7 @@
     for (let i = 0; i < 45; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() + i);
-      const items = itemsOnDate(d);
+      const items = allItemsOnDate(d);
       if (items.length) days.push({ date: d, items });
     }
 
@@ -313,11 +378,34 @@
       : `<p class="agenda-empty">No upcoming items in the next 45 days.</p>`;
   }
 
+  function renderTimetable() {
+    let html = `<div class="tt-head tt-corner"></div>`;
+    html += SESSIONS.map((s) => `<div class="tt-head">${s.label}<small>${formatTime(s.start)} – ${formatTime(s.end)}</small></div>`).join("");
+
+    let i = 0;
+    for (let day = 1; day <= 6; day++) {
+      html += `<div class="tt-day" style="--i:${i++}">${DAY_NAMES[day]}</div>`;
+      const rows = TIMETABLE[day];
+      html += rows
+        .map((entry) => {
+          if (!entry) return `<div class="tt-cell empty" style="--i:${i++}">—</div>`;
+          const c = subjectColor(entry.code);
+          return `<div class="tt-cell" style="--i:${i++};--cell-c:${c}">
+            <span class="tt-code">${escapeHtml(entry.code)}</span>${entry.sub ? ` <span class="tt-sub">(${escapeHtml(entry.sub)})</span>` : ""}
+            ${entry.room ? `<div class="tt-room">${escapeHtml(entry.room)}</div>` : ""}
+          </div>`;
+        })
+        .join("");
+    }
+    timetableGrid.innerHTML = html;
+  }
+
   function renderAll() {
     renderMonth();
     renderDayPanel();
     renderUpcoming();
     renderAgenda();
+    renderTimetable();
   }
 
   /* ---------------- Toast ---------------- */
@@ -470,7 +558,7 @@
       return;
     }
     const editTarget = e.target.closest("[data-edit]");
-    if (editTarget) {
+    if (editTarget && !editTarget.dataset.edit.startsWith("class-")) {
       openModal({ editId: editTarget.dataset.edit });
     }
   }
@@ -482,7 +570,7 @@
   monthGrid.addEventListener("click", (e) => {
     const chip = e.target.closest("[data-id]");
     if (chip) {
-      openModal({ editId: chip.dataset.id });
+      if (!chip.dataset.id.startsWith("class-")) openModal({ editId: chip.dataset.id });
       return;
     }
     const cell = e.target.closest(".day-cell");
@@ -525,16 +613,13 @@
     document.querySelectorAll(".view-btn").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
     document.querySelectorAll(".mtab[data-view]").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
 
-    if (view === "agenda") {
-      monthGrid.style.display = "none";
-      weekdayRow.style.display = "none";
-      agendaView.hidden = false;
-      renderAgenda();
-    } else {
-      monthGrid.style.display = "grid";
-      weekdayRow.style.display = "grid";
-      agendaView.hidden = true;
-    }
+    monthGrid.style.display = view === "month" || view === "day" ? "grid" : "none";
+    weekdayRow.style.display = view === "month" || view === "day" ? "grid" : "none";
+    agendaView.hidden = view !== "agenda";
+    timetableView.hidden = view !== "timetable";
+
+    if (view === "agenda") renderAgenda();
+    if (view === "timetable") renderTimetable();
 
     if (view === "day") {
       state.selectedDate = startOfDay(new Date());
