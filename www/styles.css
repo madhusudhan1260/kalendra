@@ -750,7 +750,7 @@ button { font-family: inherit; }
   body { overflow: auto; }
   .app { height: auto; min-height: 100vh; }
 
-  .topbar { padding: 12px 14px; gap: 10px; }
+  .topbar { padding: calc(12px + env(safe-area-inset-top)) 14px 12px; gap: 10px; }
   .brand-name { display: none; }
   .month-label { font-size: 0.95rem; min-width: unset; }
   .view-switch { display: none; }
