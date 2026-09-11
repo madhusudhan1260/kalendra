@@ -303,8 +303,9 @@
       const weekendClass = holidayClass ? "" : dow === 0 ? "weekend-sun" : dow === 6 ? "weekend-sat" : "";
       const visible = items.slice(0, 3);
       const extra = items.length - visible.length;
+      const hasItemsClass = items.length ? "has-items" : "";
 
-      html += `<div class="day-cell ${outside ? "outside" : ""} ${isToday ? "is-today" : ""} ${isSelected ? "selected" : ""} ${weekendClass} ${holidayClass}" data-date="${toDateStr(cellDate)}" style="--i:${i}">
+      html += `<div class="day-cell ${outside ? "outside" : ""} ${isToday ? "is-today" : ""} ${isSelected ? "selected" : ""} ${weekendClass} ${holidayClass} ${hasItemsClass}" data-date="${toDateStr(cellDate)}" style="--i:${i}">
         <span class="day-num">${cellDate.getDate()}</span>
         <div class="day-chips">
           ${visible.map(chipHtml).join("")}

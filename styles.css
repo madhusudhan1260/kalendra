@@ -347,7 +347,7 @@ button { font-family: inherit; }
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: background .2s, color .2s, transform .2s;
+  transition: background .2s, color .2s, transform .2s, width .2s, height .2s, font-size .2s;
 }
 .day-cell.is-today .day-num {
   background: linear-gradient(135deg, var(--accent), #ec4899);
@@ -355,6 +355,18 @@ button { font-family: inherit; }
   animation: pulseRing 2.4s ease-out infinite;
 }
 .day-cell:hover .day-num { transform: scale(1.1); }
+
+/* Empty days: center a bigger date number instead of leaving the cell looking bare */
+.day-cell:not(.has-items) {
+  align-items: center;
+  justify-content: center;
+}
+.day-cell:not(.has-items) .day-num {
+  width: 40px;
+  height: 40px;
+  font-size: 1.3rem;
+}
+.day-cell:not(.has-items).outside .day-num { font-size: 1.1rem; width: 34px; height: 34px; }
 
 @keyframes pulseRing {
   0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.45); }
@@ -755,6 +767,8 @@ button { font-family: inherit; }
   .month-grid { grid-auto-rows: minmax(58px, 1fr); gap: 5px; }
   .day-cell { padding: 5px 4px; border-radius: 10px; }
   .day-num { font-size: 0.75rem; width: 20px; height: 20px; }
+  .day-cell:not(.has-items) .day-num { width: 30px; height: 30px; font-size: 1rem; }
+  .day-cell:not(.has-items).outside .day-num { width: 26px; height: 26px; font-size: 0.9rem; }
   .chip { font-size: 0; padding: 0; height: 5px; width: 5px; border-radius: 50%; }
   .chip span { display: none; }
   .day-chips { flex-direction: row; flex-wrap: wrap; gap: 3px; }
