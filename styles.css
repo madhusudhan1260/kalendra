@@ -332,6 +332,11 @@ button { font-family: inherit; }
 .day-cell.weekend-sun .day-num { color: var(--sun); }
 .day-cell.weekend-sat .day-num { color: var(--sat); }
 
+.day-cell.holiday-national { background: linear-gradient(160deg, rgba(220, 38, 38, 0.16), var(--surface) 65%); border-color: rgba(220, 38, 38, 0.35); }
+.day-cell.holiday-festival { background: linear-gradient(160deg, rgba(245, 158, 11, 0.16), var(--surface) 65%); border-color: rgba(245, 158, 11, 0.35); }
+.day-cell.holiday-national .day-num { color: #dc2626; }
+.day-cell.holiday-festival .day-num { color: #f59e0b; }
+
 .day-num {
   font-size: 0.82rem;
   font-weight: 700;
@@ -481,6 +486,8 @@ button { font-family: inherit; }
 .dot-event { background: linear-gradient(135deg, #6366f1, #818cf8); }
 .dot-birthday { background: linear-gradient(135deg, #ec4899, #f472b6); animation: dotPop 2.4s ease-in-out infinite; }
 .dot-task { background: linear-gradient(135deg, #10b981, #34d399); }
+.dot-holiday-national { background: linear-gradient(135deg, #dc2626, #f87171); }
+.dot-holiday-festival { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
 @keyframes dotPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
 
 /* ---------- Agenda view ---------- */
