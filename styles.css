@@ -481,7 +481,6 @@ button { font-family: inherit; }
 .dot-event { background: linear-gradient(135deg, #6366f1, #818cf8); }
 .dot-birthday { background: linear-gradient(135deg, #ec4899, #f472b6); animation: dotPop 2.4s ease-in-out infinite; }
 .dot-task { background: linear-gradient(135deg, #10b981, #34d399); }
-.dot-class { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
 @keyframes dotPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
 
 /* ---------- Agenda view ---------- */
