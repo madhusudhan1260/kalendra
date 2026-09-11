@@ -107,45 +107,6 @@
     return type === "birthday" ? "🎂" : type === "task" ? "✅" : "🎯";
   }
 
-  /* ---------------- Holidays (India, 2026) ---------------- */
-  const HOLIDAY_COLORS = { national: "#dc2626", festival: "#f59e0b" };
-  const HOLIDAYS_2026 = [
-    { date: "2026-01-01", title: "New Year's Day", category: "festival", icon: "🎉" },
-    { date: "2026-01-14", title: "Makar Sankranti / Pongal", category: "festival", icon: "🪁" },
-    { date: "2026-01-26", title: "Republic Day", category: "national", icon: "🇮🇳" },
-    { date: "2026-02-15", title: "Maha Shivratri", category: "festival", icon: "🕉️" },
-    { date: "2026-03-04", title: "Holi", category: "festival", icon: "🎨" },
-    { date: "2026-03-21", title: "Id-ul-Fitr (Eid)", category: "festival", icon: "🌙" },
-    { date: "2026-03-26", title: "Ram Navami", category: "festival", icon: "🕉️" },
-    { date: "2026-03-31", title: "Mahavir Jayanti", category: "festival", icon: "🕉️" },
-    { date: "2026-04-03", title: "Good Friday", category: "festival", icon: "✝️" },
-    { date: "2026-05-01", title: "Buddha Purnima", category: "festival", icon: "☸️" },
-    { date: "2026-05-27", title: "Id-ul-Zuha (Bakrid)", category: "festival", icon: "🌙" },
-    { date: "2026-06-26", title: "Muharram", category: "festival", icon: "🌙" },
-    { date: "2026-08-15", title: "Independence Day", category: "national", icon: "🇮🇳" },
-    { date: "2026-08-28", title: "Raksha Bandhan", category: "festival", icon: "🎗️" },
-    { date: "2026-09-04", title: "Krishna Janmashtami", category: "festival", icon: "🕉️" },
-    { date: "2026-09-14", title: "Ganesh Chaturthi", category: "festival", icon: "🐘" },
-    { date: "2026-10-02", title: "Gandhi Jayanti", category: "national", icon: "🇮🇳" },
-    { date: "2026-10-20", title: "Dussehra / Vijayadashami", category: "festival", icon: "🏹" },
-    { date: "2026-11-09", title: "Diwali", category: "festival", icon: "🪔" },
-    { date: "2026-11-24", title: "Guru Nanak Jayanti", category: "festival", icon: "☬" },
-    { date: "2026-12-25", title: "Christmas", category: "festival", icon: "🎄" },
-  ];
-  const HOLIDAY_ITEMS = HOLIDAYS_2026.map((h) => ({
-    id: `holiday-${h.date}`,
-    type: "holiday",
-    title: h.title,
-    date: h.date,
-    time: "",
-    notes: "",
-    category: h.category,
-    icon: h.icon,
-    color: HOLIDAY_COLORS[h.category],
-    repeatYearly: false,
-    done: false,
-  }));
-
   /* ---------------- Timetable (weekly recurring college schedule) ---------------- */
   const SESSIONS = [
     { label: "Session 1", start: "08:00", end: "08:55" },
@@ -204,7 +165,7 @@
   }
 
   function itemsOnDate(date) {
-    return [...state.items, ...HOLIDAY_ITEMS]
+    return state.items
       .filter((it) => occursOn(it, date))
       .sort((a, b) => {
         if (a.time && b.time) return a.time.localeCompare(b.time);
@@ -266,7 +227,6 @@
 
   function chipHtml(item) {
     const label = item.type === "birthday" ? `🎂 ${item.title}`
-      : item.type === "holiday" ? `${item.icon} ${item.title}`
       : item.type === "task" ? `${item.done ? "✓ " : ""}${item.title}`
       : item.title;
     const doneClass = item.type === "task" && item.done ? "done" : "";
@@ -298,14 +258,12 @@
       const isSelected = isSameDay(cellDate, state.selectedDate);
       const dow = cellDate.getDay();
       const items = itemsOnDate(cellDate);
-      const holidayItem = items.find((it) => it.type === "holiday");
-      const holidayClass = holidayItem ? (holidayItem.category === "national" ? "holiday-national" : "holiday-festival") : "";
-      const weekendClass = holidayClass ? "" : dow === 0 ? "weekend-sun" : dow === 6 ? "weekend-sat" : "";
+      const weekendClass = dow === 0 ? "weekend-sun" : dow === 6 ? "weekend-sat" : "";
       const visible = items.slice(0, 3);
       const extra = items.length - visible.length;
       const hasItemsClass = items.length ? "has-items" : "";
 
-      html += `<div class="day-cell ${outside ? "outside" : ""} ${isToday ? "is-today" : ""} ${isSelected ? "selected" : ""} ${weekendClass} ${holidayClass} ${hasItemsClass}" data-date="${toDateStr(cellDate)}" style="--i:${i}">
+      html += `<div class="day-cell ${outside ? "outside" : ""} ${isToday ? "is-today" : ""} ${isSelected ? "selected" : ""} ${weekendClass} ${hasItemsClass}" data-date="${toDateStr(cellDate)}" style="--i:${i}">
         <span class="day-num">${cellDate.getDate()}</span>
         <div class="day-chips">
           ${visible.map(chipHtml).join("")}
@@ -322,8 +280,6 @@
     if (item.type === "birthday") {
       const years = occ.getFullYear() - parseDateStr(item.date).getFullYear();
       metaParts.push(years > 0 ? `Turns ${years}` : "Birthday");
-    } else if (item.type === "holiday") {
-      metaParts.push(item.category === "national" ? "National Holiday" : "Festival");
     } else if (item.time) {
       metaParts.push(formatTime(item.time));
     } else {
@@ -333,7 +289,7 @@
 
     const checkHtml = item.type === "task"
       ? `<div class="item-check ${item.done ? "checked" : ""}" data-check="${item.id}">${item.done ? "✓" : ""}</div>`
-      : `<div class="item-check" style="border-color:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;">${item.icon || typeIcon(item.type)}</div>`;
+      : `<div class="item-check" style="border-color:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;">${typeIcon(item.type)}</div>`;
 
     const c2 = lighten(item.color, 0.32);
     return `<div class="item-card" data-edit="${item.id}" style="--chip-c:${item.color};--chip-c2:${c2}">
@@ -363,7 +319,7 @@
 
   function renderUpcoming() {
     const today = startOfDay(new Date());
-    const upcoming = [...state.items, ...HOLIDAY_ITEMS]
+    const upcoming = state.items
       .map((item) => ({ item, occ: nextOccurrence(item, today) }))
       .filter((x) => x.occ)
       .sort((a, b) => a.occ - b.occ || (a.item.time || "").localeCompare(b.item.time || ""))
@@ -574,7 +530,7 @@
       return;
     }
     const editTarget = e.target.closest("[data-edit]");
-    if (editTarget && !editTarget.dataset.edit.startsWith("holiday-")) {
+    if (editTarget) {
       openModal({ editId: editTarget.dataset.edit });
     }
   }
@@ -586,7 +542,7 @@
   monthGrid.addEventListener("click", (e) => {
     const chip = e.target.closest("[data-id]");
     if (chip) {
-      if (!chip.dataset.id.startsWith("holiday-")) openModal({ editId: chip.dataset.id });
+      openModal({ editId: chip.dataset.id });
       return;
     }
     const cell = e.target.closest(".day-cell");
