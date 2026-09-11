@@ -104,7 +104,7 @@
   }
 
   function typeIcon(type) {
-    return type === "birthday" ? "🎂" : type === "task" ? "✅" : type === "class" ? "📚" : "🎯";
+    return type === "birthday" ? "🎂" : type === "task" ? "✅" : "🎯";
   }
 
   /* ---------------- Timetable (weekly recurring college schedule) ---------------- */
@@ -138,35 +138,6 @@
     6: [ { code: "FSD", sub: "SIB", room: "LT 107" }, null, null, null, null ],
   };
   const DAY_NAMES = { 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday" };
-
-  /* Weekly classes as calendar-item-shaped objects for a given date's weekday */
-  function classesOnDate(date) {
-    const rows = TIMETABLE[date.getDay()];
-    if (!rows) return [];
-    return rows
-      .map((entry, i) => (entry ? { entry, session: SESSIONS[i] } : null))
-      .filter(Boolean)
-      .map(({ entry, session }) => ({
-        id: `class-${date.getDay()}-${session.label}`,
-        type: "class",
-        title: entry.sub ? `${entry.code} (${entry.sub})` : entry.code,
-        notes: entry.room || "",
-        time: session.start,
-        endTime: session.end,
-        color: subjectColor(entry.code),
-        done: false,
-        repeatYearly: false,
-      }));
-  }
-
-  function allItemsOnDate(date) {
-    return [...itemsOnDate(date), ...classesOnDate(date)].sort((a, b) => {
-      if (a.time && b.time) return a.time.localeCompare(b.time);
-      if (a.time) return -1;
-      if (b.time) return 1;
-      return 0;
-    });
-  }
 
   /* Blend a hex color toward white by `amt` (0-1) for gradient chips */
   function lighten(hex, amt) {
@@ -285,7 +256,7 @@
       const isSelected = isSameDay(cellDate, state.selectedDate);
       const dow = cellDate.getDay();
       const weekendClass = dow === 0 ? "weekend-sun" : dow === 6 ? "weekend-sat" : "";
-      const items = allItemsOnDate(cellDate);
+      const items = itemsOnDate(cellDate);
       const visible = items.slice(0, 3);
       const extra = items.length - visible.length;
 
@@ -306,8 +277,6 @@
     if (item.type === "birthday") {
       const years = occ.getFullYear() - parseDateStr(item.date).getFullYear();
       metaParts.push(years > 0 ? `Turns ${years}` : "Birthday");
-    } else if (item.type === "class") {
-      metaParts.push(`${formatTime(item.time)} – ${formatTime(item.endTime)}`);
     } else if (item.time) {
       metaParts.push(formatTime(item.time));
     } else {
@@ -337,7 +306,7 @@
     selectedDayTitle.textContent = title;
     sheetDayTitle.textContent = title;
 
-    const items = allItemsOnDate(state.selectedDate);
+    const items = itemsOnDate(state.selectedDate);
     const html = items.length
       ? items.map((it) => itemCardHtml(it, { date: state.selectedDate })).join("")
       : `<p class="empty-hint">No items yet. Tap "Add" to create one.</p>`;
@@ -364,7 +333,7 @@
     for (let i = 0; i < 45; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() + i);
-      const items = allItemsOnDate(d);
+      const items = itemsOnDate(d);
       if (items.length) days.push({ date: d, items });
     }
 
@@ -558,7 +527,7 @@
       return;
     }
     const editTarget = e.target.closest("[data-edit]");
-    if (editTarget && !editTarget.dataset.edit.startsWith("class-")) {
+    if (editTarget) {
       openModal({ editId: editTarget.dataset.edit });
     }
   }
@@ -570,7 +539,7 @@
   monthGrid.addEventListener("click", (e) => {
     const chip = e.target.closest("[data-id]");
     if (chip) {
-      if (!chip.dataset.id.startsWith("class-")) openModal({ editId: chip.dataset.id });
+      openModal({ editId: chip.dataset.id });
       return;
     }
     const cell = e.target.closest(".day-cell");
