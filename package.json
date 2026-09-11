@@ -1,0 +1,27 @@
+{
+  "name": "calendar-planner",
+  "version": "1.0.0",
+  "description": "A clean, fast calendar for tracking **events**, **birthdays**, and **tasks** — built with plain HTML, CSS, and JavaScript. No build step, no dependencies, no backend. Everything is saved locally in your browser.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sync:ios": "bash scripts/sync-ios.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/madhusudhan1260/kalendra.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/madhusudhan1260/kalendra/issues"
+  },
+  "homepage": "https://github.com/madhusudhan1260/kalendra#readme",
+  "dependencies": {
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/ios": "^8.5.1"
+  }
+}
